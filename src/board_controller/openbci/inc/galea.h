@@ -47,7 +47,13 @@ public:
     int release_session ();
     int config_board (std::string config, std::string &response);
 
-    static constexpr int package_size = 72;
-    static constexpr int num_packages = 19;
-    static constexpr int transaction_size = package_size * num_packages;
+    static constexpr int base_package_size = 68;
+    // todo add quantization?
+    static constexpr int exg_package_size =
+        52; // 3 bytes per channel, 16 channels, 4 bytes timestamp
+    static constexpr int num_base_packages = 4;
+    static constexpr int num_exg_packages_per_base = 5;
+    static constexpr int bytes_in_single_entry =
+        base_package_size + num_exg_packages_per_base * exg_package_size;
+    static constexpr int transaction_size = bytes_in_single_entry * num_base_packages;
 };

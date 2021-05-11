@@ -14,8 +14,11 @@ using json = nlohmann::json;
 #include <errno.h>
 #endif
 
-constexpr int Galea::package_size;
-constexpr int Galea::num_packages;
+constexpr int Galea::base_package_size;
+constexpr int Galea::exg_package_size;
+constexpr int Galea::num_base_packages;
+constexpr int Galea::bytes_in_single_entry;
+constexpr int Galea::num_exg_packages_per_base;
 constexpr int Galea::transaction_size;
 
 
@@ -321,7 +324,8 @@ void Galea::read_thread ()
     unsigned char b[Galea::transaction_size];
     DataBuffer time_buffer (1, 11);
     double latest_times[10];
-    constexpr int offset_last_package = Galea::package_size * (Galea::num_packages - 1);
+    constexpr int offset_last_base_package =
+        Galea::bytes_in_single_entry * (Galea::num_base_packages - 1);
     for (int i = 0; i < Galea::transaction_size; i++)
     {
         b[i] = 0;
@@ -339,8 +343,8 @@ void Galea::read_thread ()
         // calc delta between PC timestamp and device timestamp in last 10 packages,
         // use this delta later on to assign timestamps
         double pc_timestamp = get_timestamp ();
-        double timestamp_last_package = 0.0;
-        memcpy (&timestamp_last_package, b + 64 + offset_last_package, 8);
+        float timestamp_last_package = 0.0;
+        memcpy (&timestamp_last_package, b + 64 + offset_last_base_package, 4);
         timestamp_last_package /= 1000; // from ms to seconds
         double time_delta = pc_timestamp - timestamp_last_package;
         time_buffer.add_data (&time_delta);
@@ -388,24 +392,23 @@ void Galea::read_thread ()
             }
         }
 
-        for (int cur_package = 0; cur_package < Galea::num_packages; cur_package++)
+        for (int cur_base_package = 0; cur_base_package < Galea::num_base_packages;
+             cur_base_package++)
         {
-            int offset = cur_package * package_size;
-            // package num
+            // parse full base package
+            int offset = cur_base_package * Galea::bytes_in_single_entry;
             package[board_descr["package_num_channel"].get<int> ()] = (double)b[0 + offset];
-            // eeg and emg
             for (int i = 4, tmp_counter = 0; i < 20; i++, tmp_counter++)
             {
-                // put them directly after package num in brainflow
                 if (tmp_counter < 6)
                     package[i - 3] =
-                        emg_scale * (double)cast_24bit_to_int32 (b + offset + 5 + 3 * (i - 4));
+                        emg_scale * (double)cast_24bit_to_int32 (b + offset + 5 + 3 * tmp_counter);
                 else if ((tmp_counter == 6) || (tmp_counter == 11)) // fp1 and fp2
                     package[i - 3] = eeg_scale_sister_board *
-                        (double)cast_24bit_to_int32 (b + offset + 5 + 3 * (i - 4));
+                        (double)cast_24bit_to_int32 (b + offset + 5 + 3 * tmp_counter);
                 else
                     package[i - 3] = eeg_scale_main_board *
-                        (double)cast_24bit_to_int32 (b + offset + 5 + 3 * (i - 4));
+                        (double)cast_24bit_to_int32 (b + offset + 5 + 3 * tmp_counter);
             }
             uint16_t temperature;
             int32_t ppg_ir;
@@ -415,26 +418,50 @@ void Galea::read_thread ()
             memcpy (&eda, b + 1 + offset, 4);
             memcpy (&ppg_red, b + 56 + offset, 4);
             memcpy (&ppg_ir, b + 60 + offset, 4);
-            // ppg
             package[board_descr["ppg_channels"][0].get<int> ()] = (double)ppg_red;
             package[board_descr["ppg_channels"][1].get<int> ()] = (double)ppg_ir;
-            // eda
             package[board_descr["eda_channels"][0].get<int> ()] = (double)eda;
-            // temperature
             package[board_descr["temperature_channels"][0].get<int> ()] = temperature / 100.0;
-            // battery
             package[board_descr["battery_channel"].get<int> ()] = (double)b[53 + offset];
 
-            double timestamp_device = 0.0;
-            memcpy (&timestamp_device, b + 64 + offset, 8);
+            float timestamp_device = 0.0;
+            memcpy (&timestamp_device, b + 64 + offset, 4);
             timestamp_device /= 1000; // from ms to seconds
 
             package[board_descr["timestamp_channel"].get<int> ()] =
                 timestamp_device + time_delta - half_rtt;
             package[board_descr["other_channels"][0].get<int> ()] = pc_timestamp;
-            package[board_descr["other_channels"][1].get<int> ()] = timestamp_device;
+            package[board_descr["other_channels"][1].get<int> ()] = (double)timestamp_device;
 
             push_package (package);
+
+            // parse exg only packages
+            for (int exg_package_num = 0; exg_package_num < Galea::num_exg_packages_per_base;
+                 exg_package_num++)
+            {
+                int exg_offset = offset + Galea::exg_package_size * exg_package_num;
+                for (int i = 4, tmp_counter = 0; i < 20; i++, tmp_counter++)
+                {
+                    if (tmp_counter < 6)
+                        package[i - 3] = emg_scale *
+                            (double)cast_24bit_to_int32 (b + exg_offset + 3 * tmp_counter);
+                    else if ((tmp_counter == 6) || (tmp_counter == 11)) // fp1 and fp2
+                        package[i - 3] = eeg_scale_sister_board *
+                            (double)cast_24bit_to_int32 (b + exg_offset + 3 * tmp_counter);
+                    else
+                        package[i - 3] = eeg_scale_main_board *
+                            (double)cast_24bit_to_int32 (b + exg_offset + 3 * tmp_counter);
+                }
+                timestamp_device = 0.0;
+                memcpy (&timestamp_device, b + 48 + exg_offset, 4);
+                timestamp_device /= 1000; // from ms to seconds
+                package[board_descr["timestamp_channel"].get<int> ()] =
+                    timestamp_device + time_delta - half_rtt;
+                package[board_descr["other_channels"][0].get<int> ()] = pc_timestamp;
+                package[board_descr["other_channels"][1].get<int> ()] = (double)timestamp_device;
+                package[board_descr["package_num_channel"].get<int> ()]++;
+                push_package (package);
+            }
         }
     }
     delete[] package;
@@ -442,11 +469,11 @@ void Galea::read_thread ()
 
 int Galea::calc_time (std::string &resp)
 {
-    constexpr int bytes_to_calc_rtt = 8;
+    constexpr int bytes_to_calc_rtt = 4;
     unsigned char b[bytes_to_calc_rtt];
 
     double start = get_timestamp ();
-    int res = socket->send ("F4444444", bytes_to_calc_rtt);
+    int res = socket->send ("F444", bytes_to_calc_rtt);
     if (res != bytes_to_calc_rtt)
     {
         safe_logger (spdlog::level::warn, "failed to send time calc command to device");
@@ -461,14 +488,14 @@ int Galea::calc_time (std::string &resp)
         return (int)BrainFlowExitCodes::BOARD_WRITE_ERROR;
     }
     double duration = done - start;
-    double timestamp_device = 0;
-    memcpy (&timestamp_device, b, 8);
+    float timestamp_device = 0;
+    memcpy (&timestamp_device, b, 4);
     timestamp_device /= 1000;
     half_rtt = duration / 2;
 
     json result;
     result["rtt"] = duration;
-    result["timestamp_device"] = timestamp_device;
+    result["timestamp_device"] = (double)timestamp_device;
     result["pc_timestamp"] = start + half_rtt;
 
     resp = result.dump ();

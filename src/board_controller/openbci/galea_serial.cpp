@@ -14,8 +14,15 @@ using json = nlohmann::json;
 #include <errno.h>
 #endif
 
-#define START_BYTE 0xA0
-#define END_BYTE 0xC0
+
+constexpr int GaleaSerial::base_package_size;
+constexpr int GaleaSerial::exg_package_size;
+constexpr int GaleaSerial::num_base_packages;
+constexpr int GaleaSerial::bytes_in_single_entry;
+constexpr int GaleaSerial::num_exg_packages_per_base;
+constexpr int GaleaSerial::transaction_size;
+constexpr unsigned char GaleaSerial::start_byte;
+constexpr unsigned char GaleaSerial::stop_byte;
 
 
 GaleaSerial::GaleaSerial (struct BrainFlowInputParams params)
@@ -267,14 +274,12 @@ int GaleaSerial::release_session ()
 void GaleaSerial::read_thread ()
 {
     int res = 0;
-    constexpr int package_size = 72;
-    constexpr int num_packages = 19;
-    constexpr int transaction_size = package_size * num_packages + 1; // + 1 because of end byte
-    unsigned char b[transaction_size];
+    unsigned char b[GaleaSerial::transaction_size];
     DataBuffer time_buffer (1, 11);
     double latest_times[10];
-    constexpr int offset_last_package = package_size * (num_packages - 1);
-    for (int i = 0; i < transaction_size; i++)
+    constexpr int offset_last_base_package =
+        GaleaSerial::bytes_in_single_entry * (GaleaSerial::num_base_packages - 1);
+    for (int i = 0; i < GaleaSerial::transaction_size; i++)
     {
         b[i] = 0;
     }
@@ -295,12 +300,12 @@ void GaleaSerial::read_thread ()
             continue;
         }
         double pc_timestamp = get_timestamp ();
-        if (b[0] != START_BYTE)
+        if (b[0] != GaleaSerial::start_byte)
         {
             continue;
         }
         // read and check reamining bytes
-        int remaining_bytes = transaction_size;
+        int remaining_bytes = GaleaSerial::transaction_size;
         int pos = 0;
         while ((remaining_bytes > 0) && (keep_alive))
         {
@@ -312,9 +317,16 @@ void GaleaSerial::read_thread ()
         {
             break;
         }
-        if (b[transaction_size - 1] != END_BYTE)
+        unsigned char last_byte = 0;
+        res = serial->read_from_serial_port (&last_byte, 1);
+        if (res != 1)
         {
-            safe_logger (spdlog::level::warn, "Wrong end byte {}", b[transaction_size - 1]);
+            safe_logger (spdlog::level::debug, "Failed to read last byte");
+            continue;
+        }
+        if (last_byte != GaleaSerial::stop_byte)
+        {
+            safe_logger (spdlog::level::debug, "Wrong end byte {}", last_byte);
             continue;
         }
         else
@@ -331,11 +343,8 @@ void GaleaSerial::read_thread ()
                 safe_logger (spdlog::level::debug, "start streaming");
             }
         }
-
-        // calc delta between PC timestamp and device timestamp in last 10 packages,
-        // use this delta later on to assign timestamps
-        double timestamp_last_package = 0.0;
-        memcpy (&timestamp_last_package, b + 64 + offset_last_package, 8);
+        float timestamp_last_package = 0.0;
+        memcpy (&timestamp_last_package, b + 64 + offset_last_base_package, 4);
         timestamp_last_package /= 1000; // from ms to seconds
         double time_delta = pc_timestamp - timestamp_last_package;
         time_buffer.add_data (&time_delta);
@@ -347,24 +356,24 @@ void GaleaSerial::read_thread ()
         }
         time_delta /= num_time_deltas;
 
-        for (int cur_package = 0; cur_package < num_packages; cur_package++)
+        // todo: avoid copypaste
+        for (int cur_base_package = 0; cur_base_package < GaleaSerial::num_base_packages;
+             cur_base_package++)
         {
-            int offset = cur_package * package_size;
-            // package num
+            // parse full base package
+            int offset = cur_base_package * GaleaSerial::bytes_in_single_entry;
             package[board_descr["package_num_channel"].get<int> ()] = (double)b[0 + offset];
-            // eeg and emg
             for (int i = 4, tmp_counter = 0; i < 20; i++, tmp_counter++)
             {
-                // put them directly after package num in brainflow
                 if (tmp_counter < 6)
                     package[i - 3] =
-                        emg_scale * (double)cast_24bit_to_int32 (b + offset + 5 + 3 * (i - 4));
+                        emg_scale * (double)cast_24bit_to_int32 (b + offset + 5 + 3 * tmp_counter);
                 else if ((tmp_counter == 6) || (tmp_counter == 11)) // fp1 and fp2
                     package[i - 3] = eeg_scale_sister_board *
-                        (double)cast_24bit_to_int32 (b + offset + 5 + 3 * (i - 4));
+                        (double)cast_24bit_to_int32 (b + offset + 5 + 3 * tmp_counter);
                 else
                     package[i - 3] = eeg_scale_main_board *
-                        (double)cast_24bit_to_int32 (b + offset + 5 + 3 * (i - 4));
+                        (double)cast_24bit_to_int32 (b + offset + 5 + 3 * tmp_counter);
             }
             uint16_t temperature;
             int32_t ppg_ir;
@@ -374,26 +383,50 @@ void GaleaSerial::read_thread ()
             memcpy (&eda, b + 1 + offset, 4);
             memcpy (&ppg_red, b + 56 + offset, 4);
             memcpy (&ppg_ir, b + 60 + offset, 4);
-            // ppg
             package[board_descr["ppg_channels"][0].get<int> ()] = (double)ppg_red;
             package[board_descr["ppg_channels"][1].get<int> ()] = (double)ppg_ir;
-            // eda
             package[board_descr["eda_channels"][0].get<int> ()] = (double)eda;
-            // temperature
             package[board_descr["temperature_channels"][0].get<int> ()] = temperature / 100.0;
-            // battery
             package[board_descr["battery_channel"].get<int> ()] = (double)b[53 + offset];
 
-            double timestamp_device = 0.0;
-            memcpy (&timestamp_device, b + 64 + offset, 8);
+            float timestamp_device = 0.0;
+            memcpy (&timestamp_device, b + 64 + offset, 4);
             timestamp_device /= 1000; // from ms to seconds
 
             package[board_descr["timestamp_channel"].get<int> ()] =
                 timestamp_device + time_delta - half_rtt;
             package[board_descr["other_channels"][0].get<int> ()] = pc_timestamp;
-            package[board_descr["other_channels"][1].get<int> ()] = timestamp_device;
+            package[board_descr["other_channels"][1].get<int> ()] = (double)timestamp_device;
 
             push_package (package);
+
+            // parse exg only packages
+            for (int exg_package_num = 0; exg_package_num < GaleaSerial::num_exg_packages_per_base;
+                 exg_package_num++)
+            {
+                int exg_offset = offset + GaleaSerial::exg_package_size * exg_package_num;
+                for (int i = 4, tmp_counter = 0; i < 20; i++, tmp_counter++)
+                {
+                    if (tmp_counter < 6)
+                        package[i - 3] = emg_scale *
+                            (double)cast_24bit_to_int32 (b + exg_offset + 3 * tmp_counter);
+                    else if ((tmp_counter == 6) || (tmp_counter == 11)) // fp1 and fp2
+                        package[i - 3] = eeg_scale_sister_board *
+                            (double)cast_24bit_to_int32 (b + exg_offset + 3 * tmp_counter);
+                    else
+                        package[i - 3] = eeg_scale_main_board *
+                            (double)cast_24bit_to_int32 (b + exg_offset + 3 * tmp_counter);
+                }
+                timestamp_device = 0.0;
+                memcpy (&timestamp_device, b + 48 + exg_offset, 4);
+                timestamp_device /= 1000; // from ms to seconds
+                package[board_descr["timestamp_channel"].get<int> ()] =
+                    timestamp_device + time_delta - half_rtt;
+                package[board_descr["other_channels"][0].get<int> ()] = pc_timestamp;
+                package[board_descr["other_channels"][1].get<int> ()] = (double)timestamp_device;
+                package[board_descr["package_num_channel"].get<int> ()]++;
+                push_package (package);
+            }
         }
     }
     delete[] package;
@@ -401,12 +434,12 @@ void GaleaSerial::read_thread ()
 
 int GaleaSerial::calc_time (std::string &resp)
 {
-    constexpr int bytes_to_calc_rtt = 8;
+    constexpr int bytes_to_calc_rtt = 4;
     unsigned char b[bytes_to_calc_rtt];
 
     double start = get_timestamp ();
-    int res = serial->send_to_serial_port ("F4444444\n", 9);
-    if (res != 9)
+    int res = serial->send_to_serial_port ("F444\n", 5);
+    if (res != 5)
     {
         safe_logger (spdlog::level::warn, "failed to send time calc command to device");
         return (int)BrainFlowExitCodes::BOARD_WRITE_ERROR;
@@ -420,14 +453,14 @@ int GaleaSerial::calc_time (std::string &resp)
         return (int)BrainFlowExitCodes::BOARD_WRITE_ERROR;
     }
     double duration = done - start;
-    double timestamp_device = 0;
-    memcpy (&timestamp_device, b, 8);
+    float timestamp_device = 0;
+    memcpy (&timestamp_device, b, 4);
     timestamp_device /= 1000;
     half_rtt = duration / 2;
 
     json result;
     result["rtt"] = duration;
-    result["timestamp_device"] = timestamp_device;
+    result["timestamp_device"] = (float)timestamp_device;
     result["pc_timestamp"] = start + half_rtt;
 
     resp = result.dump ();

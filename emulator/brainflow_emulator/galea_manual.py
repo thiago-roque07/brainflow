@@ -21,7 +21,7 @@ class Message(enum.Enum):
     stop_stream = b's'
     ack_values = (b'd', b'~6', b'~5', b'o', b'F0')
     ack_from_device = b'A'
-    time_calc_command = b'F4444444'
+    time_calc_command = b'F444'
 
 
 class GaleaEmulator(object):
@@ -36,11 +36,15 @@ class GaleaEmulator(object):
         self.state = State.wait.value
         self.addr = None
         self.package_num = 0
-        self.transaction_size = 19
-        self.package_size = 72
+        self.base_package_size = 68
+        self.exg_package_size = 52
+        self.num_base_packages = 4
+        self.num_exg_packages_per_base = 5
+        self.bytes_in_single_entry = self.base_package_size + self.num_exg_packages_per_base * self.exg_package_size
+        self.transaction_size = self.bytes_in_single_entry * self.num_base_packages
 
-    def run (self):
-        start_time = time.time ()
+    def run(self):
+        start_time = time.time()
         while True:
             try:
                 msg, self.addr = self.server_socket.recvfrom(128)
@@ -51,9 +55,9 @@ class GaleaEmulator(object):
                 elif msg in Message.ack_values.value or msg.decode('utf-8').startswith('x'):
                     self.server_socket.sendto(Message.ack_from_device.value, self.addr)
                 elif msg == Message.time_calc_command.value:
-                    cur_time = time.time ()
-                    resp = bytearray (struct.pack ('d', (cur_time - start_time) * 1000))
-                    self.server_socket.sendto (resp, self.addr)
+                    cur_time = time.time()
+                    resp = bytearray(struct.pack('f', (cur_time - start_time) * 1000))
+                    self.server_socket.sendto(resp, self.addr)
                 else:
                     if msg:
                         # we dont handle board config characters because they dont change package format
@@ -62,41 +66,39 @@ class GaleaEmulator(object):
                 logging.debug('timeout for recv')
 
             if self.state == State.stream.value:
-                transaction = list ()
-                for _ in range (self.transaction_size):
-                    single_package = list ()
-                    for i in range (self.package_size):
-                        single_package.append (random.randint (0, 255))
-                    single_package[0] = self.package_num
-
-                    cur_time = time.time ()
-                    timestamp = bytearray (struct.pack ('d', (cur_time - start_time) * 1000))
-                    eda = bytearray (struct.pack ('f', random.random ()))
-                    ppg_red = bytearray (struct.pack ('i', int (random.random () * 5000)))
-                    ppg_ir = bytearray (struct.pack ('i', int (random.random () * 5000)))
-                    battery = bytearray (struct.pack ('i', int (random.random () * 100)))
-
-                    for i in range (64, 72):
-                        single_package[i] = timestamp[i - 64]
-                    for i in range(1, 5):
-                        single_package[i] = eda[i - 1]
-                    for i in range(60, 64):
-                        single_package[i] = ppg_ir[i - 60]
-                    for i in range(56, 60):
-                        single_package[i] = ppg_red[i - 56]
-                    single_package[53] = random.randint(0, 100)
-
+                package = list()
+                for _ in range(self.num_base_packages):
+                    package.append(self.package_num)
                     self.package_num = self.package_num + 1
                     if self.package_num % 256 == 0:
                         self.package_num = 0
-                    transaction.append(single_package)
+                    for i in range(1, self.base_package_size - 4):
+                        package.append(random.randint(0, 255))
+                    cur_time = time.time()
+                    timestamp = bytearray(struct.pack('f', (cur_time - start_time) * 1000))
+                    package.extend(timestamp)
+                    for _ in range(self.num_exg_packages_per_base):
+                        for i in range(self.exg_package_size - 4):
+                            package.append(random.randint(0, 255))
+                        cur_time = time.time()
+                        timestamp = bytearray(struct.pack('f', (cur_time - start_time) * 1000))
+                        package.extend(timestamp)
+                # for gui
+                eda = bytearray(struct.pack('f', random.random()))
+                ppg_red = bytearray(struct.pack('i', int(random.random() * 5000)))
+                ppg_ir = bytearray(struct.pack('i', int(random.random() * 5000)))
+                battery = bytearray(struct.pack('i', int(random.random() * 100)))
+                for i in range(1, 5):
+                    package[i] = eda[i - 1]
+                for i in range(60, 64):
+                    package[i] = ppg_ir[i - 60]
+                for i in range(56, 60):
+                    package[i] = ppg_red[i - 56]
+                package[53] = random.randint(0, 100)
                 try:
-                    package = list()
-                    for i in range(self.transaction_size):
-                        package.extend(bytes(transaction[i]))
                     self.server_socket.sendto(bytes(package), self.addr)
                 except socket.timeout:
-                    logging.info ('timeout for send')
+                    logging.info('timeout for send')
 
 
 def main():

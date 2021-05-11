@@ -136,23 +136,38 @@ class GaleaWriter(threading.Thread):
         self.delay = delay
         self.package_size = 72 * 19
         self.package_num = 0
+        self.base_package_size = 68
+        self.exg_package_size = 52
+        self.num_base_packages = 4
+        self.num_exg_packages_per_base = 5
+        self.bytes_in_single_entry = self.base_package_size + self.num_exg_packages_per_base * self.exg_package_size
+        self.transaction_size = self.bytes_in_single_entry * self.num_base_packages
         self.need_data = True
 
     def run(self):
+        start_time = time.time()
         while self.need_data:
-            if self.package_num % 256 == 0:
-                self.package_num = 0
-
             package = list()
             package.append(0xA0)
-            for i in range(self.package_size):
-                package.append(random.randint(0, 255))
+            for _ in range(self.num_base_packages):
+                package.append(self.package_num)
+                self.package_num = self.package_num + 1
+                if self.package_num % 256 == 0:
+                    self.package_num = 0
+                for i in range(1, self.base_package_size - 4):
+                    package.append(random.randint(0, 255))
+                cur_time = time.time()
+                timestamp = bytearray(struct.pack('f', (cur_time - start_time) * 1000))
+                package.extend(timestamp)
+                for _ in range(self.num_exg_packages_per_base):
+                    for i in range(self.exg_package_size - 4):
+                        package.append(random.randint(0, 255))
+                    cur_time = time.time()
+                    timestamp = bytearray(struct.pack('f', (cur_time - start_time) * 1000))
+                    package.extend(timestamp)
             package.append(0xC0)
-            logging.debug('package is %s' % ' '.join([str(x) for x in package]))
-            self.write(self.port, bytes(package))
-
-            self.package_num = self.package_num + 1
             time.sleep(self.delay)
+            self.write(self.port, bytes(package))
 
 
 def main(cmd_list):
