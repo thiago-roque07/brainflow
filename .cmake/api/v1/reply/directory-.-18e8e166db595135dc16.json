@@ -1,0 +1,509 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install",
+			"include"
+		],
+		"files" : 
+		[
+			"src/board_controller/openbci/ganglion_bglib/build.cmake",
+			"src/board_controller/build.cmake",
+			"CMakeLists.txt",
+			"src/board_controller/muse/muse_bglib/build.cmake",
+			"src/board_controller/neuromd/brainbit_bglib/build.cmake",
+			"src/board_controller/neuromd/build.cmake",
+			"src/data_handler/build.cmake",
+			"src/ml/build.cmake",
+			"cpp-package/build.cmake"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 2
+			},
+			{
+				"command" : 1,
+				"file" : 2,
+				"line" : 37,
+				"parent" : 0
+			},
+			{
+				"file" : 1,
+				"parent" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 83,
+				"parent" : 2
+			},
+			{
+				"file" : 0,
+				"parent" : 3
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 66,
+				"parent" : 4
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 85,
+				"parent" : 2
+			},
+			{
+				"file" : 3,
+				"parent" : 6
+			},
+			{
+				"command" : 0,
+				"file" : 3,
+				"line" : 72,
+				"parent" : 7
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 86,
+				"parent" : 2
+			},
+			{
+				"file" : 5,
+				"parent" : 9
+			},
+			{
+				"command" : 1,
+				"file" : 5,
+				"line" : 1,
+				"parent" : 10
+			},
+			{
+				"file" : 4,
+				"parent" : 11
+			},
+			{
+				"command" : 0,
+				"file" : 4,
+				"line" : 68,
+				"parent" : 12
+			},
+			{
+				"command" : 0,
+				"file" : 1,
+				"line" : 234,
+				"parent" : 2
+			},
+			{
+				"command" : 0,
+				"file" : 1,
+				"line" : 247,
+				"parent" : 2
+			},
+			{
+				"command" : 1,
+				"file" : 2,
+				"line" : 38,
+				"parent" : 0
+			},
+			{
+				"file" : 6,
+				"parent" : 16
+			},
+			{
+				"command" : 0,
+				"file" : 6,
+				"line" : 109,
+				"parent" : 17
+			},
+			{
+				"command" : 0,
+				"file" : 6,
+				"line" : 115,
+				"parent" : 17
+			},
+			{
+				"command" : 1,
+				"file" : 2,
+				"line" : 39,
+				"parent" : 0
+			},
+			{
+				"file" : 7,
+				"parent" : 20
+			},
+			{
+				"command" : 0,
+				"file" : 7,
+				"line" : 125,
+				"parent" : 21
+			},
+			{
+				"command" : 0,
+				"file" : 7,
+				"line" : 132,
+				"parent" : 21
+			},
+			{
+				"command" : 0,
+				"file" : 7,
+				"line" : 138,
+				"parent" : 21
+			},
+			{
+				"command" : 1,
+				"file" : 2,
+				"line" : 40,
+				"parent" : 0
+			},
+			{
+				"file" : 8,
+				"parent" : 25
+			},
+			{
+				"command" : 0,
+				"file" : 8,
+				"line" : 32,
+				"parent" : 26
+			},
+			{
+				"command" : 0,
+				"file" : 8,
+				"line" : 42,
+				"parent" : 26
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 55,
+				"parent" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 2,
+				"line" : 59,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 5,
+			"component" : "Unspecified",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"compiled/libGanglionLib.dll.a"
+			],
+			"targetId" : "GanglionLib::@6890427a1f51a3e7e1df",
+			"targetIndex" : 5,
+			"targetIsImportLibrary" : true,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 5,
+			"component" : "Unspecified",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"compiled/libGanglionLib.dll"
+			],
+			"targetId" : "GanglionLib::@6890427a1f51a3e7e1df",
+			"targetIndex" : 5,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 8,
+			"component" : "Unspecified",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"compiled/libMuseLib.dll.a"
+			],
+			"targetId" : "MuseLib::@6890427a1f51a3e7e1df",
+			"targetIndex" : 7,
+			"targetIsImportLibrary" : true,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 8,
+			"component" : "Unspecified",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"compiled/libMuseLib.dll"
+			],
+			"targetId" : "MuseLib::@6890427a1f51a3e7e1df",
+			"targetIndex" : 7,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 13,
+			"component" : "Unspecified",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"compiled/libBrainBitLib.dll.a"
+			],
+			"targetId" : "BrainBitLib::@6890427a1f51a3e7e1df",
+			"targetIndex" : 1,
+			"targetIsImportLibrary" : true,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 13,
+			"component" : "Unspecified",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"compiled/libBrainBitLib.dll"
+			],
+			"targetId" : "BrainBitLib::@6890427a1f51a3e7e1df",
+			"targetIndex" : 1,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 14,
+			"component" : "Unspecified",
+			"destination" : "inc",
+			"paths" : 
+			[
+				"src/board_controller/inc/board_controller.h",
+				"src/utils/inc/brainflow_constants.h",
+				"src/board_controller/inc/board_info_getter.h",
+				"src/board_controller/inc/brainflow_input_params.h",
+				"src/utils/inc/shared_export.h",
+				"src/utils/inc/brainflow_array.h",
+				"src/utils/inc/brainflow_exception.h",
+				"third_party/json/json.hpp"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 15,
+			"component" : "Unspecified",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"compiled/libBoardController.dll.a"
+			],
+			"targetId" : "BoardController::@6890427a1f51a3e7e1df",
+			"targetIndex" : 0,
+			"targetIsImportLibrary" : true,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 15,
+			"component" : "Unspecified",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"compiled/libBoardController.dll"
+			],
+			"targetId" : "BoardController::@6890427a1f51a3e7e1df",
+			"targetIndex" : 0,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 18,
+			"component" : "Unspecified",
+			"destination" : "inc",
+			"paths" : 
+			[
+				"src/data_handler/inc/data_handler.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 19,
+			"component" : "Unspecified",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"libDSPFilters.a"
+			],
+			"targetId" : "DSPFilters::@6890427a1f51a3e7e1df",
+			"targetIndex" : 3,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 19,
+			"component" : "Unspecified",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"libWaveLib.a"
+			],
+			"targetId" : "WaveLib::@6890427a1f51a3e7e1df",
+			"targetIndex" : 8,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 19,
+			"component" : "Unspecified",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"compiled/libDataHandler.dll.a"
+			],
+			"targetId" : "DataHandler::@6890427a1f51a3e7e1df",
+			"targetIndex" : 4,
+			"targetIsImportLibrary" : true,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 19,
+			"component" : "Unspecified",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"compiled/libDataHandler.dll"
+			],
+			"targetId" : "DataHandler::@6890427a1f51a3e7e1df",
+			"targetIndex" : 4,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 22,
+			"component" : "Unspecified",
+			"destination" : "inc",
+			"paths" : 
+			[
+				"src/ml/inc/ml_module.h",
+				"src/ml/inc/brainflow_model_params.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 23,
+			"component" : "Unspecified",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"src/ml/train/brainflow_svm.model"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 24,
+			"component" : "Unspecified",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"compiled/libMLModule.dll.a"
+			],
+			"targetId" : "MLModule::@6890427a1f51a3e7e1df",
+			"targetIndex" : 6,
+			"targetIsImportLibrary" : true,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 24,
+			"component" : "Unspecified",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"compiled/libMLModule.dll"
+			],
+			"targetId" : "MLModule::@6890427a1f51a3e7e1df",
+			"targetIndex" : 6,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 27,
+			"component" : "Unspecified",
+			"destination" : "inc",
+			"paths" : 
+			[
+				"cpp-package/src/inc/data_filter.h",
+				"cpp-package/src/inc/board_shim.h",
+				"cpp-package/src/inc/ml_model.h",
+				"src/utils/inc/brainflow_array.h",
+				"src/utils/inc/brainflow_exception.h"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 28,
+			"component" : "Unspecified",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"libBrainflow.a"
+			],
+			"targetId" : "Brainflow::@6890427a1f51a3e7e1df",
+			"targetIndex" : 2,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 29,
+			"component" : "Unspecified",
+			"destination" : "lib/cmake/brainflow",
+			"paths" : 
+			[
+				"compiled/brainflowConfig.cmake",
+				"compiled/brainflowConfigVersion.cmake"
+			],
+			"type" : "file"
+		},
+		{
+			"backtrace" : 30,
+			"component" : "Unspecified",
+			"destination" : "lib/cmake/brainflow",
+			"exportName" : "brainflowTargets",
+			"exportTargets" : 
+			[
+				{
+					"id" : "GanglionLib::@6890427a1f51a3e7e1df",
+					"index" : 5
+				},
+				{
+					"id" : "MuseLib::@6890427a1f51a3e7e1df",
+					"index" : 7
+				},
+				{
+					"id" : "BrainBitLib::@6890427a1f51a3e7e1df",
+					"index" : 1
+				},
+				{
+					"id" : "BoardController::@6890427a1f51a3e7e1df",
+					"index" : 0
+				},
+				{
+					"id" : "DSPFilters::@6890427a1f51a3e7e1df",
+					"index" : 3
+				},
+				{
+					"id" : "WaveLib::@6890427a1f51a3e7e1df",
+					"index" : 8
+				},
+				{
+					"id" : "DataHandler::@6890427a1f51a3e7e1df",
+					"index" : 4
+				},
+				{
+					"id" : "MLModule::@6890427a1f51a3e7e1df",
+					"index" : 6
+				},
+				{
+					"id" : "Brainflow::@6890427a1f51a3e7e1df",
+					"index" : 2
+				}
+			],
+			"paths" : 
+			[
+				"CMakeFiles/Export/lib/cmake/brainflow/brainflowTargets.cmake"
+			],
+			"type" : "export"
+		}
+	],
+	"paths" : 
+	{
+		"build" : ".",
+		"source" : "."
+	}
+}
